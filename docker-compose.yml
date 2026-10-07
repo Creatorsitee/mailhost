@@ -1,0 +1,46 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=/app/db.json
+      - SESSION_SECRET=${SESSION_SECRET}
+      - MAIL_SERVER_IP=${SERVER_IP}
+      - SMTP_HOST=mailserver
+      - SMTP_PORT=587
+      - IMAP_HOST=mailserver
+      - IMAP_PORT=993
+      - SERVER_INTERNAL_MASTER_KEY=${MASTER_KEY}
+    volumes:
+      - ./db.json:/app/db.json
+      - ./attachments:/app/attachments
+    depends_on:
+      - mailserver
+
+  mailserver:
+    image: docker.io/mailserver/docker-mailserver:latest
+    container_name: mailserver
+    hostname: ${MAIL_HOSTNAME}
+    domainname: ${DOMAIN}
+    ports:
+      - "25:25"    # SMTP
+      - "143:143"  # IMAP
+      - "587:587"  # Submission
+      - "993:993"  # IMAPS
+    volumes:
+      - ./mail-data/:/var/mail/
+      - ./mail-state/:/var/mail-state/
+      - ./mail-config/:/tmp/docker-mailserver/
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - ENABLE_SPAMASSASSIN=1
+      - ENABLE_CLAMAV=0
+      - ENABLE_FAIL2BAN=1
+      - ENABLE_POSTGRE_SQL=0
+      - ONE_DIR=1
+      - DMS_DEBUG=0
+    cap_add:
+      - NET_ADMIN
+      - SYS_PTRACE
+    restart: always
